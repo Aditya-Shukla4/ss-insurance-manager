@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 export async function middleware(request: NextRequest) {
+  console.log("🔍 Middleware triggered for:", request.nextUrl.pathname);
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,
@@ -58,8 +60,15 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
+  console.log("🔐 Session found:", !!session, session?.user?.email);
+  console.log(
+    "🍪 Cookies:",
+    request.cookies.getAll().map((c) => c.name)
+  );
+
   // If user is not logged in and trying to access protected routes
   if (!session && request.nextUrl.pathname.startsWith("/dashboard")) {
+    console.log("❌ No session - redirecting to /login");
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -69,9 +78,11 @@ export async function middleware(request: NextRequest) {
     (request.nextUrl.pathname.startsWith("/login") ||
       request.nextUrl.pathname.startsWith("/signup"))
   ) {
+    console.log("✅ Session exists - redirecting to /dashboard");
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
+  console.log("✅ Allowing access to:", request.nextUrl.pathname);
   return response;
 }
 
