@@ -41,8 +41,6 @@ export default function LoginPage() {
         alert("Error logging in: " + error.message);
         setLoading(false);
       } else if (data.session) {
-        console.log("✅ Login successful! Session:", data.session.user.email);
-        console.log("📦 Session data:", data.session);
 
         // Check if localStorage is working
         const testStorage = localStorage.getItem("supabase.auth.token");
@@ -52,8 +50,6 @@ export default function LoginPage() {
         );
 
         // CRITICAL: Wait for Supabase to set cookies properly
-        console.log("⏳ Waiting for session cookies to be set...");
-        await new Promise((resolve) => setTimeout(resolve, 1500));
 
         // Check again after wait
         const afterWait = localStorage.getItem("supabase.auth.token");
@@ -63,7 +59,7 @@ export default function LoginPage() {
         );
 
         console.log("🚀 Redirecting to dashboard...");
-        window.location.replace("/dashboard");
+        router.push("/dashboard");
       }
     } catch (err) {
       console.error("Unexpected error:", err);

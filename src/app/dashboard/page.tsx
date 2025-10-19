@@ -12,17 +12,8 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Dashboard component mounted");
-
     const { data: authListener } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        console.log(
-          "Auth state changed - Event:",
-          event,
-          "Session:",
-          !!session
-        );
-
         const currentUser = session?.user ?? null;
         setUser(currentUser);
         setLoading(false);
