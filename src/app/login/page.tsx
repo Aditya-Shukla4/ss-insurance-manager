@@ -19,51 +19,74 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const handleLogin = async () => {
     if (!email || !password) {
-      alert("Please enter both email and password.");
+      setError("Please enter both email and password.");
       return;
     }
 
     setLoading(true);
-    console.log("Login attempt for:", email);
+    setError("");
+    console.log("🔐 Login attempt for:", email);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: email,
-        password: password,
-      });
+      // Step 1: Authenticate user
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password: password,
+        });
 
-      if (error) {
-        console.error("Login error:", error);
-        alert("Error logging in: " + error.message);
+      if (authError) {
+        console.error("❌ Auth error:", authError);
+        setError(authError.message);
         setLoading(false);
-      } else if (data.session) {
+        return;
+      }
 
-        // Check if localStorage is working
-        const testStorage = localStorage.getItem("supabase.auth.token");
-        console.log(
-          "💾 LocalStorage test:",
-          testStorage ? "Working" : "Not working"
-        );
+      if (!authData.session || !authData.user) {
+        setError("Login failed. Please try again.");
+        setLoading(false);
+        return;
+      }
 
-        // CRITICAL: Wait for Supabase to set cookies properly
+      console.log("✅ Authentication successful for user:", authData.user.id);
 
-        // Check again after wait
-        const afterWait = localStorage.getItem("supabase.auth.token");
-        console.log(
-          "💾 After wait - LocalStorage:",
-          afterWait ? "Session saved!" : "Still not saved"
-        );
+      // Step 2: Fetch user's role from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("role, full_name")
+        .eq("id", authData.user.id)
+        .single();
 
-        console.log("🚀 Redirecting to dashboard...");
+      if (profileError || !profileData) {
+        console.error("❌ Profile fetch error:", profileError);
+        setError("Could not load user profile. Please contact support.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+
+      console.log("✅ Profile loaded. Role:", profileData.role);
+
+      // Step 3: Redirect based on role
+      if (profileData.role === "admin") {
+        console.log("🚀 Redirecting to admin dashboard...");
         router.push("/dashboard");
+      } else if (profileData.role === "client") {
+        console.log("🚀 Redirecting to client dashboard...");
+        router.push("/dashboard");
+      } else {
+        setError("Invalid user role. Please contact support.");
+        await supabase.auth.signOut();
+        setLoading(false);
       }
     } catch (err) {
-      console.error("Unexpected error:", err);
-      alert("An unexpected error occurred");
+      console.error("💥 Unexpected error:", err);
+      setError("An unexpected error occurred. Please try again.");
       setLoading(false);
     }
   };
@@ -79,12 +102,17 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <div className="grid w-full items-center gap-4">
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-md text-sm">
+                {error}
+              </div>
+            )}
             <div className="flex flex-col space-y-1.5">
               <Label htmlFor="email">Email</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="admin@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loading}

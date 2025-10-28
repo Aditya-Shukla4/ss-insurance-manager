@@ -17,38 +17,18 @@ export async function middleware(request: NextRequest) {
           return request.cookies.get(name)?.value;
         },
         set(name: string, value: string, options) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          });
+          request.cookies.set({ name, value, ...options });
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           });
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          });
+          response.cookies.set({ name, value, ...options });
         },
         remove(name: string, options) {
-          request.cookies.set({
-            name,
-            value: "",
-            ...options,
-          });
+          request.cookies.set({ name, value: "", ...options });
           response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
+            request: { headers: request.headers },
           });
-          response.cookies.set({
-            name,
-            value: "",
-            ...options,
-          });
+          response.cookies.set({ name, value: "", ...options });
         },
       },
     }
@@ -58,16 +38,18 @@ export async function middleware(request: NextRequest) {
     data: { session },
   } = await supabase.auth.getSession();
 
-  // If user is not logged in and trying to access protected routes
-  if (!session && request.nextUrl.pathname.startsWith("/dashboard")) {
+  const publicRoutes = ["/login", "/signup"];
+  const currentPath = request.nextUrl.pathname;
+
+  // 1. Agar user logged in nahi hai AUR protected route pe jaa raha hai -> /login bhej do
+  if (!session && currentPath.startsWith("/dashboard")) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // If user is logged in and trying to access login/signup page
+  // 2. Agar user logged in hai AUR public route (login/signup) YA root (/) pe jaa raha hai -> /dashboard bhej do
   if (
     session &&
-    (request.nextUrl.pathname.startsWith("/login") ||
-      request.nextUrl.pathname.startsWith("/signup"))
+    (publicRoutes.includes(currentPath) || currentPath === "/")
   ) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
@@ -77,5 +59,6 @@ export async function middleware(request: NextRequest) {
 
 // Specify which paths this middleware should run on
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/signup"],
+  // AB HUM ROOT (/) KO BHI MATCH KAR RAHE HAIN
+  matcher: ["/dashboard/:path*", "/login", "/signup", "/"],
 };

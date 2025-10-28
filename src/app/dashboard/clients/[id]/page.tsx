@@ -1,165 +1,161 @@
+// File: src/app/dashboard/clients/[id]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
-import { type Client } from "@/app/dashboard/page"; // Reuse the type from dashboard
-import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient'; // Check path
+import { type Client, type Policy } from '@/lib/types'; // Check path
+import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
-// Define a type for our Policy data
-export type Policy = {
-  id: string;
-  company: string;
-  plan_name: string;
-  policy_no: string;
-  premium: number;
-  due_date: string;
-  status: string;
-  commission_percentage: number;
-};
+// Loading Spinner
+const LoadingSpinner = () => (
+    <div className="flex justify-center items-center h-[50vh]"> {/* Use less height */}
+        <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-700 font-semibold">Loading Client Details...</p>
+        </div>
+    </div>
+);
 
 export default function ClientDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const clientId = params.id as string;
+    const params = useParams();
+    const router = useRouter();
+    const clientId = params.id as string; // Get client ID from URL
 
-  const [client, setClient] = useState<Client | null>(null);
-  const [policies, setPolicies] = useState<Policy[]>([]);
-  const [loading, setLoading] = useState(true);
+    const [client, setClient] = useState<Client | null>(null);
+    const [policies, setPolicies] = useState<Policy[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (clientId) {
-      const fetchClientData = async () => {
-        setLoading(true);
+    useEffect(() => {
+        if (!clientId) return; // Agar ID nahi hai toh kuch mat kar
 
-        // Fetch client details and policies in parallel for speed
-        const [clientRes, policiesRes] = await Promise.all([
-          supabase.from("clients").select("*").eq("id", clientId).single(),
-          supabase.from("policies").select("*").eq("client_id", clientId),
-        ]);
+        const fetchClientData = async () => {
+            setLoading(true);
+            setError(null);
 
-        if (clientRes.error) {
-          console.error("Error fetching client:", clientRes.error);
-        } else {
-          setClient(clientRes.data);
-        }
+            // Check if user is admin before fetching? (Security Enhancement later)
+             // For now, assume admin is accessing
 
-        if (policiesRes.error) {
-          console.error("Error fetching policies:", policiesRes.error);
-          alert("Could not fetch policies. Did you set the RLS policies?");
-        } else {
-          setPolicies(policiesRes.data);
-        }
+            // Fetch Client Details
+            const { data: clientData, error: clientError } = await supabase
+                .from('clients')
+                .select('*') // Fetch all client details
+                .eq('id', clientId)
+                .single();
 
-        setLoading(false);
-      };
-      fetchClientData();
+            if (clientError || !clientData) {
+                console.error('Error fetching client:', clientError);
+                setError('Client not found or access denied.');
+                setLoading(false);
+                return;
+            }
+            setClient(clientData);
+
+            // Fetch Policies for this Client
+            const { data: policiesData, error: policiesError } = await supabase
+                .from('policies')
+                .select('*') // Fetch all policy details
+                .eq('client_id', clientId) // Filter by client ID
+                .order('due_date', { ascending: true });
+
+            if (policiesError) {
+                console.error('Error fetching policies:', policiesError);
+                setError('Could not fetch policies for this client.');
+                // Don't stop loading, maybe show partial data
+            } else {
+                setPolicies(policiesData || []);
+            }
+
+            setLoading(false);
+        };
+
+        fetchClientData();
+
+        // Optional: Add Supabase listener for real-time updates for THIS client's policies
+        // const policyListener = supabase.channel(...) .subscribe();
+        // return () => supabase.removeChannel(policyListener);
+
+    }, [clientId]); // Re-run when clientId changes
+
+    if (loading) {
+        return <LoadingSpinner />;
     }
-  }, [clientId]);
 
-  if (loading) {
+    if (error) {
+        return (
+             <div className="p-8">
+                <Button variant="outline" onClick={() => router.back()} className="mb-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                </Button>
+                <div className="text-center py-10">
+                    <h2 className="text-2xl font-bold text-red-600">Error</h2>
+                    <p className="text-red-500 mt-2">{error}</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (!client) {
+         return ( // Should ideally not happen if error handling is correct
+             <div className="p-8">
+                <Button variant="outline" onClick={() => router.back()} className="mb-4">
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+                </Button>
+                 <p className="text-center text-gray-500">Client data not available.</p>
+             </div>
+        );
+    }
+
+    // ----- YEH HAI ASLI CLIENT DETAIL PAGE -----
     return (
-      <div className="p-8">
-        <p>Loading client details and policies...</p>
-      </div>
+        <div className="p-8">
+            <Button variant="outline" onClick={() => router.back()} className="mb-6">
+                <ArrowLeft className="mr-2 h-4 w-4" /> Back to Client List
+            </Button>
+
+            <h1 className="text-3xl font-bold mb-2">{client.name}</h1>
+            <p className="text-gray-600 mb-1">Phone: {client.phone}</p>
+            <p className="text-gray-600 mb-6">Email: {client.email}</p>
+
+            <h2 className="text-2xl font-semibold mb-4">Policies</h2>
+             {/* TODO: Add Policy CRUD buttons here (Add/Edit/Delete) */}
+            <div className="border rounded-lg overflow-hidden">
+                {/* Yahaan pe policies ki table aayegi (reuse ClientDashboard table?) */}
+                 {policies.length > 0 ? (
+                     <table className="min-w-full divide-y divide-gray-200">
+                         <thead className="bg-gray-50">
+                             <tr>
+                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Premium</th>
+                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                             </tr>
+                         </thead>
+                         <tbody className="bg-white divide-y divide-gray-200">
+                             {policies.map((policy) => (
+                                 <tr key={policy.id}>
+                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{policy.company}</td>
+                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{policy.plan_name}</td>
+                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">₹{policy.premium.toLocaleString('en-IN')}</td>
+                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{new Date(policy.due_date).toLocaleDateString()}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{policy.status}</td>
+                                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                         {/* TODO: Add Edit/Delete buttons */}
+                                         <Button variant="ghost" size="sm">Edit</Button>
+                                     </td>
+                                 </tr>
+                             ))}
+                         </tbody>
+                     </table>
+                 ) : (
+                     <p className="p-6 text-center text-gray-500">No policies found for this client.</p>
+                 )}
+            </div>
+        </div>
     );
-  }
-
-  if (!client) {
-    return (
-      <div className="p-8">
-        <p>Client not found.</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => router.back()}
-        className="mb-4"
-      >
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Dashboard
-      </Button>
-
-      <div className="mb-6">
-        <h1 className="text-4xl font-bold">{client.name}</h1>
-        <p className="text-lg text-gray-500">Client Profile & Policies</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-white p-6 rounded-lg border mb-8">
-        <div>
-          <h3 className="font-semibold text-gray-500">Phone Number</h3>
-          <p>{client.phone}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold text-gray-500">Email Address</h3>
-          <p>{client.email || "Not Provided"}</p>
-        </div>
-        <div>
-          <h3 className="font-semibold text-gray-500">Date of Birth</h3>
-          <p>{client.dob || "Not Provided"}</p>
-        </div>
-      </div>
-
-      <div>
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold">Policies</h2>
-          <Button>Add New Policy</Button> {/* This will be our next feature */}
-        </div>
-        <div className="border rounded-lg">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Company</TableHead>
-                <TableHead>Plan Name</TableHead>
-                <TableHead>Policy No.</TableHead>
-                <TableHead>Premium</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {policies.length > 0 ? (
-                policies.map((policy) => (
-                  <TableRow key={policy.id}>
-                    <TableCell className="font-medium">
-                      {policy.company}
-                    </TableCell>
-                    <TableCell>{policy.plan_name}</TableCell>
-                    <TableCell>{policy.policy_no}</TableCell>
-                    <TableCell>
-                      ₹{policy.premium.toLocaleString("en-IN")}
-                    </TableCell>
-                    <TableCell>
-                      {new Date(policy.due_date).toLocaleDateString()}
-                    </TableCell>
-                    <TableCell>{policy.status}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
-                    No policies found for this client.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-    </div>
-  );
 }
