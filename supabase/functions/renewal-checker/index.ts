@@ -122,11 +122,11 @@ Deno.serve(async (req: Request) => {
     for (const policy of policies) {
       const clientName = policy.clients?.name ?? "Unknown Client";
       const clientId = policy.clients?.id ?? null;
-      const message = `Renewal Due: Policy "${
-        policy.plan_name
-      }" for client "${clientName}" is due on ${new Date(
-        policy.due_date
-      ).toLocaleDateString()}.`;
+      // Make sure due_date is treated correctly (assuming it's a simple YYYY-MM-DD string)
+      const formattedDueDate = new Date(
+        policy.due_date + "T00:00:00Z"
+      ).toLocaleDateString("en-IN", { timeZone: "UTC" }); // Format as DD/MM/YYYY
+      const message = `Renewal Due: Policy "${policy.plan_name}" for client "${clientName}" is due on ${formattedDueDate}.`;
 
       // Check if this notification ALREADY exists (to avoid duplicates)
       const { data: existingNotif, error: checkError } = await supabaseClient
@@ -202,3 +202,5 @@ Deno.serve(async (req: Request) => {
     );
   }
 });
+
+console.log(`Function renewal-checker (v2) setup complete. Ready to serve.`);
