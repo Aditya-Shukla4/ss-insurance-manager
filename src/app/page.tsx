@@ -8,7 +8,7 @@ import {
   BellRing,
   Trophy,
   Users,
-  Award,
+  Award,  
   HeartHandshake,
   MessageCircle,
   CheckCircle2,
