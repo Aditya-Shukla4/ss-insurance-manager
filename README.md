@@ -102,13 +102,6 @@ To test the SS Insurance Manager, follow these steps:
 3. **Build**: Run the command `npm run build` to build the application.
 4. **Test**: Run the command `npm run test` to run the tests.
 
-📸 Screenshots
-==============
-
-[![Screenshot 1](https://via.placeholder.com/300x200)](https://via.placeholder.com/300x200)
-[![Screenshot 2](https://via.placeholder.com/300x200)](https://via.placeholder.com/300x200)
-[![Screenshot 3](https://via.placeholder.com/300x200)](https://via.placeholder.com/300x200)
-
 📦 API Reference
 ================
 
@@ -120,7 +113,7 @@ The SS Insurance Manager uses the following APIs:
 👤 Author
 =========
 
-The SS Insurance Manager was developed by [Your Name](https://github.com/your-username).
+The SS Insurance Manager was developed by [Aditya Shukla](https://github.com/Aditya-Shukla4).
 
 📝 License
 =========
