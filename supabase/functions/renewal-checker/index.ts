@@ -1,4 +1,4 @@
-/// <reference types="https://deno.land/x/deno/cli/types/deploy.d.ts" />
+/// <reference types="npm:@supabase/functions-js@2" />
 
 // Import CORS headers from the _shared folder
 import { corsHeaders } from "../_shared/cors.ts";
