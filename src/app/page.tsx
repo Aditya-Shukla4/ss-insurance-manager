@@ -314,7 +314,7 @@ export default function LandingPage() {
         <section className="bg-white py-12 sm:py-16">
           <div className="container mx-auto px-4" data-aos="fade-in">
             <h3 className="text-center text-xl sm:text-2xl font-semibold text-gray-500 mb-8 tracking-wide">
-              Proudly Partnered With India's Top Insurers
+              Proudly Partnered With India&apos;s Top Insurers
             </h3>
             <div className="flex flex-wrap justify-center items-center gap-x-8 sm:gap-x-12 gap-y-6">
               {partners.map((partner, index) => (
