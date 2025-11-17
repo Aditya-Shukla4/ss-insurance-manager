@@ -485,13 +485,14 @@ export default function LandingPage() {
               <div className="flex-shrink-0 w-40 h-40 sm:w-48 sm:h-48 rounded-lg border-4 border-gray-200 shadow-md overflow-hidden mx-auto md:mx-0">
                 {/* Conditionally render image or fallback */}
                 {!founderPhotoError ? (
-                  <Image
-                    src="/logos/Owner-photo.png"
-                    alt="Sunil Kumar Shukla - Founder, SS Insurance"
-                    layout="fill" // <-- YEH BEST HAI (poora div bhar dega)
-                    objectFit="cover" // <-- YEH "object-cover" ka kaam karega
-                    onError={handleFounderPhotoError}
-                  />
+                  <div className="relative w-[260px] h-[420px] overflow-hidden rounded-xl shadow-lg">
+                    <Image
+                      src="/logos/Owner-photo.png"
+                      alt="Founder Photo"
+                      fill
+                      className="object-cover object-top"
+                    />
+                  </div>
                 ) : (
                   // Fallback: Show Award icon if image fails
                   <div className="w-full h-full flex items-center justify-center bg-gray-100">
