@@ -122,7 +122,7 @@ interface AdminDashboardProps {
   handleLogout: () => void;
 }
 
-function AdminDashboard({ user, profile, handleLogout }: AdminDashboardProps) {
+function AdminDashboard({ profile, handleLogout }: AdminDashboardProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [clients, setClients] = useState<Client[]>([]);
   const [summaryStats, setSummaryStats] = useState<SummaryStats>({
@@ -201,7 +201,7 @@ function AdminDashboard({ user, profile, handleLogout }: AdminDashboardProps) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "clients" },
-        (_payload: unknown) => {
+        () => {
           console.log("Client change received, refetching clients/stats...");
           if (isMounted) fetchData();
         }
@@ -209,7 +209,7 @@ function AdminDashboard({ user, profile, handleLogout }: AdminDashboardProps) {
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "policies" },
-        (_payload: unknown) => {
+        () => {
           console.log("Policy change received, refetching stats...");
           if (isMounted) fetchData();
         }

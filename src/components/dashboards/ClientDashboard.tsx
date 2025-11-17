@@ -53,8 +53,7 @@ function ClientDashboard({
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "policies" },
-        (_payload) => {
-          // Refetch policies on any change
+        () => {
           fetchMyPolicies();
         }
       )
